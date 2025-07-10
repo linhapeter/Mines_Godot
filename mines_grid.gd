@@ -2,6 +2,10 @@ extends TileMap
 
 class_name MinesGrid
 
+signal flag_change(number_of_flags)
+signal game_lost
+signal game_won
+
 const CELLS = {
 	"1": Vector2i(0, 0),
 	"2": Vector2i(1, 0),
@@ -27,6 +31,7 @@ const DEFAULT_LAYER = 0
 
 var cells_with_mines = []
 var cells_checked_recursively = []
+var is_game_finished = false
 
 func _ready():
 	clear_layer(DEFAULT_LAYER)
@@ -42,10 +47,10 @@ func set_tile_cell(cell_coord, cell_type):
 
 func place_mines():
 	for i in number_of_mines:
-		var cell_coordinates = Vector2(randf_range(- rows / 2, rows / 2 - 1), randf_range(- columns / 2, columns / 2 - 1))
+		var cell_coordinates = Vector2i(randf_range(- rows / 2, rows / 2 - 1), randi_range(- columns / 2, columns / 2 - 1))
 		
 		while cells_with_mines.has(cell_coordinates):
-			cell_coordinates = Vector2(randf_range(- rows / 2, rows / 2 - 1), randf_range(- columns / 2, columns / 2 - 1))
+			cell_coordinates = Vector2i(randf_range(- rows / 2, rows / 2 - 1), randi_range(- columns / 2, columns / 2 - 1))
 		cells_with_mines.append(cell_coordinates)
 		
 	for cell in cells_with_mines:
@@ -66,8 +71,10 @@ func _input(event: InputEvent):
 
 func on_cell_clicked(cell_coord):
 	if cells_with_mines.any(func (cell): return cell.x == cell_coord.x && cell.y == cell_coord.y):
-		print("LOSE")
+		
+		lose(cell_coord)
 		return
+	
 	cells_checked_recursively.append(cell_coord)
 	handle_cells(cell_coord, true)
 	
@@ -110,3 +117,12 @@ func handle_surrounding_cell(cell_coord):
 		
 	cells_checked_recursively.append(cell_coord)
 	handle_cells(cell_coord)
+	
+func lose(cell_coord):
+	game_lost.emit()
+	is_game_finished = true 
+	
+	for cell in cells_with_mines:
+		set_tile_cell(cell, "MINE")
+		
+	set_tile_cell(cell_coord, "MINE_RED")

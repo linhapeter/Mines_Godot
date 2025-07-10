@@ -26,6 +26,7 @@ const TILE_SET_ID = 0
 const DEFAULT_LAYER = 0
 
 var cells_with_mines = []
+var cells_checked_recursively = []
 
 func _ready():
 	clear_layer(DEFAULT_LAYER)
@@ -34,6 +35,7 @@ func _ready():
 		for j in columns:
 			var cell_coord = Vector2(i - rows / 2, j - columns / 2)
 			set_tile_cell(cell_coord, "DEFAULT")
+	place_mines()
 
 func set_tile_cell(cell_coord, cell_type):
 	set_cell(DEFAULT_LAYER, cell_coord, TILE_SET_ID, CELLS[cell_type])
@@ -66,3 +68,45 @@ func on_cell_clicked(cell_coord):
 	if cells_with_mines.any(func (cell): return cell.x == cell_coord.x && cell.y == cell_coord.y):
 		print("LOSE")
 		return
+	cells_checked_recursively.append(cell_coord)
+	handle_cells(cell_coord, true)
+	
+func handle_cells(cell_coord, should_stop_after_mine = false):
+	var tile_data = get_cell_tile_data(DEFAULT_LAYER, cell_coord)
+	
+	if tile_data == null:
+		return
+		
+	var cell_has_mine = tile_data.get_custom_data("has_mine")
+	
+	if cell_has_mine && should_stop_after_mine:
+		return
+	
+	var mine_count = get_surrounding_cells_mine_count(cell_coord)
+	
+	if mine_count == 0:
+		set_tile_cell(cell_coord, "CLEAR")
+		var surrounding_cells = get_surrounding_cells(cell_coord)
+		for cell in surrounding_cells:
+			handle_surrounding_cell(cell)
+	else:
+		set_tile_cell(cell_coord, "%d" % mine_count)
+	
+func get_surrounding_cells_mine_count(cell_coord):
+	var mine_count = 0
+	var surrounding_cells = get_surrounding_cells(cell_coord)
+	
+	for cell in surrounding_cells:
+		var tile_data = get_cell_tile_data(DEFAULT_LAYER, cell)
+		
+		if tile_data and tile_data.get_custom_data("has_mine"):
+			mine_count += 1
+			
+	return mine_count
+
+func handle_surrounding_cell(cell_coord):
+	if cells_checked_recursively.has(cell_coord):
+		return
+		
+	cells_checked_recursively.append(cell_coord)
+	handle_cells(cell_coord)

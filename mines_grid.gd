@@ -49,15 +49,17 @@ func set_tile_cell(cell_coord, cell_type):
 
 func place_mines():
 	for i in number_of_mines:
-		var cell_coordinates = Vector2i(randf_range(- rows / 2, rows / 2 - 1), randi_range(- columns / 2, columns / 2 - 1))
+		var cell_coordinates = Vector2i(randi_range(- rows / 2, rows / 2 - 1), randi_range(- columns / 2, columns / 2 - 1))
 		
 		while cells_with_mines.has(cell_coordinates):
-			cell_coordinates = Vector2i(randf_range(- rows / 2, rows / 2 - 1), randi_range(- columns / 2, columns / 2 - 1))
+			cell_coordinates = Vector2i(randi_range(- rows / 2, rows / 2 - 1), randi_range(- columns / 2, columns / 2 - 1))
 		cells_with_mines.append(cell_coordinates)
 		
 	for cell in cells_with_mines:
 		erase_cell(DEFAULT_LAYER, cell)
 		set_cell(DEFAULT_LAYER, cell, TILE_SET_ID, CELLS.DEFAULT, 1)
+		var tile_data = get_cell_tile_data(DEFAULT_LAYER, cell)
+		tile_data.set_custom_data("has_mine", true)
 		
 func _input(event: InputEvent):
 	
@@ -75,6 +77,7 @@ func _input(event: InputEvent):
 		place_flag(clicked_cell_coord)
 
 func on_cell_clicked(cell_coord):
+	
 	if cells_with_flags.any(func (cell): return cell.x == cell_coord.x && cell.y == cell_coord.y):
 		return
 	if cells_with_mines.any(func (cell): return cell.x == cell_coord.x && cell.y == cell_coord.y):
@@ -85,6 +88,10 @@ func on_cell_clicked(cell_coord):
 	cells_checked_recursively.append(cell_coord)
 	handle_cells(cell_coord, true)
 	
+	if cells_with_flags.has(cell_coord):
+		flags_placed -= 1
+		flag_change.emit (flags_placed)
+		cells_with_flags.erase(cell_coord)
 func handle_cells(cell_coord, should_stop_after_mine = false):
 	var tile_data = get_cell_tile_data(DEFAULT_LAYER, cell_coord)
 	
@@ -100,26 +107,28 @@ func handle_cells(cell_coord, should_stop_after_mine = false):
 	
 	if mine_count == 0:
 		set_tile_cell(cell_coord, "CLEAR")
-		var surrounding_cells = get_surrounding_cells(cell_coord)
+		var surrounding_cells = get_surrounding_cells_to_check(cell_coord)
 		for cell in surrounding_cells:
 			handle_surrounding_cell(cell)
 	else:
 		set_tile_cell(cell_coord, "%d" % mine_count)
 	
+	
+	
 func get_surrounding_cells_mine_count(cell_coord):
 	var mine_count = 0
-	var surrounding_cells = get_surrounding_cells(cell_coord)
+	var surrounding_cells = get_surrounding_cells_to_check(cell_coord)
 	
 	for cell in surrounding_cells:
 		var tile_data = get_cell_tile_data(DEFAULT_LAYER, cell)
 		
-		if tile_data and tile_data.get_custom_data("has_mine"):
+		if cells_with_mines.has(cell):
 			mine_count += 1
 			
 	return mine_count
 
 func handle_surrounding_cell(cell_coord):
-	if cells_checked_recursively.has(cell_coord):
+	if cells_checked_recursively.has(cell_coord) or cells_with_flags.any(func (cell): return cell.x == cell_coord.x && cell.y == cell_coord.y):
 		return
 		
 	cells_checked_recursively.append(cell_coord)
@@ -133,7 +142,8 @@ func lose(cell_coord):
 		set_tile_cell(cell, "MINE")
 		
 	set_tile_cell(cell_coord, "MINE_RED")
-
+	await get_tree().create_timer(1).timeout
+	get_tree().reload_current_scene()
 func place_flag(cell_coord):
 	var tile_data = get_cell_tile_data(DEFAULT_LAYER, cell_coord)
 	var atlas_coordinates = get_cell_atlas_coords(DEFAULT_LAYER, cell_coord)
@@ -171,3 +181,17 @@ func place_flag(cell_coord):
 func win():
 	is_game_finished = true
 	game_won.emit()
+	await get_tree().create_timer(1).timeout
+	get_tree().reload_current_scene()
+func get_surrounding_cells_to_check(current_cell:Vector2i):
+	var target_cell
+	var surrounding_cells = []
+	
+	for y in 3:
+		for x in 3:
+			if x == 1 and y == 1:
+				continue
+			target_cell = current_cell + Vector2i(x - 1, y - 1)
+			surrounding_cells.append(target_cell)
+	
+	return surrounding_cells

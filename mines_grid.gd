@@ -25,6 +25,8 @@ const CELLS = {
 const TILE_SET_ID = 0
 const DEFAULT_LAYER = 0
 
+var cells_with_mines = []
+
 func _ready():
 	clear_layer(DEFAULT_LAYER)
 	
@@ -35,3 +37,15 @@ func _ready():
 
 func set_tile_cell(cell_coord, cell_type):
 	set_cell(DEFAULT_LAYER, cell_coord, TILE_SET_ID, CELLS[cell_type])
+
+func place_mines():
+	for i in number_of_mines:
+		var cell_coordinates = Vector2(randf_range(- rows / 2, rows / 2 - 1), randf_range(- columns / 2, columns / 2 - 1))
+		
+		while cells_with_mines.has(cell_coordinates):
+			cell_coordinates = Vector2(randf_range(- rows / 2, rows / 2 - 1), randf_range(- columns / 2, columns / 2 - 1))
+		cells_with_mines.append(cell_coordinates)
+		
+	for cell in cells_with_mines:
+		erase_cell(DEFAULT_LAYER, cell)
+		set_cell(DEFAULT_LAYER, cell, TILE_SET_ID, CELLS.DEFAULT, 1)

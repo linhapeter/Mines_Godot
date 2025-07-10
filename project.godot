@@ -11,10 +11,19 @@ config_version=5
 [application]
 
 config/name="Mines"
+run/main_scene="uid://ddwnkucfuhwdt"
 config/features=PackedStringArray("4.4", "Forward Plus")
-config/icon="res://icon.svg"
+
+[display]
+
+window/size/viewport_width=400
+window/size/viewport_height=400
 
 [editor]
 
 version_control/plugin_name="GitPlugin"
 version_control/autoload_on_startup=true
+
+[rendering]
+
+environment/defaults/default_clear_color=Color(0, 0, 0, 1)

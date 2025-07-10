@@ -25,7 +25,7 @@ const CELLS = {
 @export var columns = 8
 @export var rows = 8
 @export var number_of_mines = 10
-
+var ff = 0
 const TILE_SET_ID = 0
 const DEFAULT_LAYER = 0
 

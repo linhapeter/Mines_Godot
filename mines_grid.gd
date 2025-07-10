@@ -49,3 +49,20 @@ func place_mines():
 	for cell in cells_with_mines:
 		erase_cell(DEFAULT_LAYER, cell)
 		set_cell(DEFAULT_LAYER, cell, TILE_SET_ID, CELLS.DEFAULT, 1)
+		
+func _input(event: InputEvent):
+
+	if event is not InputEventMouseButton || !event.pressed:
+		return
+	
+	var clicked_cell_coord = local_to_map(get_local_mouse_position())
+	
+	if event.button_index == 1:
+		on_cell_clicked(clicked_cell_coord)
+	elif event.button_index == 2:
+		print("Place Flag")
+
+func on_cell_clicked(cell_coord):
+	if cells_with_mines.any(func (cell): return cell.x == cell_coord.x && cell.y == cell_coord.y):
+		print("LOSE")
+		return
